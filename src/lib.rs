@@ -1,9 +1,10 @@
 //! ml-kem-768 (fips 203). wip.
-//!
-//! q = 3329, n = 256, k = 3. foundations only at this commit:
-//! field arithmetic in z_q, polynomials in r_q, and the ntt.
 
+pub mod compress;
 pub mod field;
+pub mod hash;
 pub mod ntt;
 pub mod params;
 pub mod poly;
+pub mod sample;
+pub mod serialize;
