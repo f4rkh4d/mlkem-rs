@@ -1,0 +1,13 @@
+[package]
+name = "mlkem"
+version = "0.1.0"
+edition = "2021"
+description = "ml-kem (kyber) post-quantum key encapsulation, from scratch in pure rust"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/f4rkh4d/mlkem-rs"
+keywords = ["crypto", "post-quantum", "kem", "kyber", "ml-kem"]
+categories = ["cryptography", "no-std"]
+
+[dependencies]
+sha3 = "0.10"
+rand_core = "0.6"
