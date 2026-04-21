@@ -79,3 +79,11 @@ no simd, no montgomery trick, plain barrett. a real implementation would be 3-4x
 ## license
 
 dual-licensed under MIT or Apache-2.0, at your option.
+
+## references
+
+- [FIPS 203 — ML-KEM (final, August 2024)](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf) — the spec this crate implements.
+- [NIST KAT release notes](https://csrc.nist.gov/projects/post-quantum-cryptography/post-quantum-cryptography-standardization/example-files) — the test vectors `tests/kat.rs` cross-checks against.
+- [`rustcrypto/ml-kem`](https://github.com/RustCrypto/KEMs/tree/master/ml-kem) — the production-ready crate; this one is an educational re-implementation that the test suite cross-checks against on every PR.
+
+if you want a hardened ML-KEM in your codebase, use rustcrypto. this one exists because i wanted to read every NTT line myself.
