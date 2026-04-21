@@ -1,5 +1,5 @@
 [package]
-name = "mlkem"
+name = "mlkem-rs"
 version = "0.1.0"
 edition = "2021"
 description = "ml-kem (kyber) post-quantum key encapsulation, from scratch in pure rust, nist-kat verified"
