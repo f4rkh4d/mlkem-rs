@@ -1,0 +1,42 @@
+[package]
+name = "mlkem-rs-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.mlkem-rs]
+path = ".."
+
+[[bin]]
+name = "decap_no_panic_768"
+path = "fuzz_targets/decap_no_panic_768.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "encap_no_panic_768"
+path = "fuzz_targets/encap_no_panic_768.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "tampered_ct_implicit_reject_768"
+path = "fuzz_targets/tampered_ct_implicit_reject_768.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "round_trip_512"
+path = "fuzz_targets/round_trip_512.rs"
+test = false
+doc = false
+bench = false

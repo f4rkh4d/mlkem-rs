@@ -3,6 +3,24 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.6.0]
+
+### added
+- `fuzz/` cargo-fuzz harness with four targets:
+  - `decap_no_panic_768` — arbitrary sk + ct, no panic
+  - `encap_no_panic_768` — arbitrary pk + m, no panic
+  - `tampered_ct_implicit_reject_768` — fuzzer-driven ct tamper, must reach implicit reject
+  - `round_trip_512` — honest round-trip at ml-kem-512
+  see `fuzz/README.md` for usage. requires nightly + `cargo install cargo-fuzz`.
+- `tests/stress.rs` is the stable-rust equivalent of the fuzz harness. fixed `ChaCha20Rng` seed, runs on every `cargo test`:
+  - 5000 honest round-trips per parameter set
+  - 2000 random-tamper cases per parameter set, each must reach implicit reject
+  - 1000 garbage-input decap calls per parameter set, each must not panic
+  - 24000 total exercises across the three levels, completes in ~1s
+
+### packaging
+- `[workspace] exclude = ["fuzz"]` so the fuzz crate does not get pulled into a top-level `cargo build --workspace`.
+
 ## [0.5.0]
 
 ### added
