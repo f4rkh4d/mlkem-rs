@@ -3,6 +3,14 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.8.5]
+
+### added
+- `examples/serde_save_restore.rs`: round-trips a keypair through bincode files on `/tmp`, then completes a handshake against the loaded keys. gated on the `serde` feature.
+  ```
+  cargo run --release --example serde_save_restore --features serde
+  ```
+
 ## [0.8.4]
 
 ### added

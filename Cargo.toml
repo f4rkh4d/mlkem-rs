@@ -1,6 +1,6 @@
 [package]
 name = "mlkem-rs"
-version = "0.8.4"
+version = "0.8.5"
 edition = "2021"
 rust-version = "1.70"
 description = "ml-kem (kyber) post-quantum key encapsulation, from scratch in pure rust, all three security levels, nist-kat verified"
@@ -44,6 +44,10 @@ harness = false
 
 [workspace]
 exclude = ["fuzz"]
+
+[[example]]
+name = "serde_save_restore"
+required-features = ["serde"]
 
 [profile.release]
 opt-level = 3
