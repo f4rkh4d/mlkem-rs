@@ -89,6 +89,7 @@ use subtle::ConstantTimeEq;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 pub use params::{Params, Params1024, Params512, Params768};
+pub use poly::MAX_K;
 
 /// returned when a slice handed to a `TryFrom` impl on a key, ciphertext, or
 /// shared secret newtype has the wrong length.

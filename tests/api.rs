@@ -3,6 +3,18 @@
 
 use rand::thread_rng;
 
+#[test]
+fn max_k_re_export_matches_params() {
+    // CHANGELOG 0.5.0 said "MAX_K const exposed as the upper bound (= 4)
+    // on parameter rank." until this fix the const lived at poly::MAX_K
+    // and was unreachable from outside the crate. assert the public path
+    // exists and the value matches the largest Params::K.
+    assert_eq!(mlkem::MAX_K, 4);
+    assert!(mlkem::MAX_K >= <mlkem::Params512 as mlkem::Params>::K);
+    assert!(mlkem::MAX_K >= <mlkem::Params768 as mlkem::Params>::K);
+    assert!(mlkem::MAX_K >= <mlkem::Params1024 as mlkem::Params>::K);
+}
+
 macro_rules! api_tests {
     ($mod:ident, $kem:ident, $pk:ty, $sk:ty, $ct:ty, $pk_size:expr, $sk_size:expr, $ct_size:expr) => {
         mod $mod {
