@@ -3,6 +3,14 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.8.7]
+
+### added
+- `deny.toml` for [cargo-deny](https://github.com/EmbarkStudios/cargo-deny). pins allowed licenses, denies yanked crates, denies wildcard versions, only allows the crates.io registry.
+
+### fixed
+- `Debug` derived on `MlKem512`/`-768`/`-1024` and on `Params512`/`-768`/`-1024`. needed to clear the `missing_debug_implementations` lint introduced in 0.8.6, otherwise the next `cargo clippy -D warnings` would fail.
+
 ## [0.8.6]
 
 ### added

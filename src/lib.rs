@@ -136,6 +136,7 @@ pub trait Kem {
 macro_rules! mlkem_api {
     ($name:ident, $params:ty, $pkty:ident, $skty:ident, $ctty:ident, $ssty:ident,
      $pk:expr, $sk:expr, $ct:expr) => {
+        #[derive(Debug)]
         pub struct $name;
 
         impl $name {

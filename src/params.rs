@@ -14,6 +14,7 @@ pub trait Params: 'static {
     const DV: usize;
 }
 
+#[derive(Debug)]
 pub struct Params512;
 impl Params for Params512 {
     const K: usize = 2;
@@ -23,6 +24,7 @@ impl Params for Params512 {
     const DV: usize = 4;
 }
 
+#[derive(Debug)]
 pub struct Params768;
 impl Params for Params768 {
     const K: usize = 3;
@@ -32,6 +34,7 @@ impl Params for Params768 {
     const DV: usize = 4;
 }
 
+#[derive(Debug)]
 pub struct Params1024;
 impl Params for Params1024 {
     const K: usize = 4;
