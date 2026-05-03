@@ -17,7 +17,7 @@ an implementation of [fips 203](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS
 | ml-kem-768   | 3 | 1184 B  | 2400 B  | 1088 B  | 3 (aes-192)   |
 | ml-kem-1024  | 4 | 1568 B  | 3168 B  | 1568 B  | 5 (aes-256)   |
 
-written from the spec. only crypto dependency is `sha3`. no `unsafe`. no c bindings.
+written from the spec. only crypto dependency is `sha3`. no `unsafe`. no c bindings. `no_std` compatible (default feature `std` is on; turn it off for embedded).
 
 this is my implementation. it is not audited. if you need audited crypto for production, use [`ml-kem`](https://crates.io/crates/ml-kem) from rustcrypto. if you want to read 700 lines of post-quantum code top to bottom, this one was written for that.
 
@@ -71,7 +71,6 @@ for reference, [rustcrypto `ml-kem`](https://crates.io/crates/ml-kem) on the sam
 ## what is missing
 
 - no hardware acceleration paths (no avx2, no neon, no aarch64 sve).
-- no `no_std` yet (depends on `alloc::Vec` internally; could lift this with const-generic params, planned).
 - not audited. cross-checks against the audited rustcrypto crate are byte-equal on every byte we have ever tested, but "agrees on 3000 seeds" is not "is correct on every seed."
 
 ## things flagged

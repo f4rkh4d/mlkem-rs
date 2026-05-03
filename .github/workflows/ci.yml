@@ -26,3 +26,23 @@ jobs:
         run: cargo clippy --release --all-targets -- -D warnings
       - name: test
         run: cargo test --release
+
+  no-std:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: thumbv7em-none-eabihf
+      - name: build no_std (cortex-m4)
+        run: cargo build --no-default-features --target thumbv7em-none-eabihf
+
+  wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: build wasm32
+        run: cargo build --no-default-features --target wasm32-unknown-unknown

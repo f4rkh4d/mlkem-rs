@@ -3,6 +3,16 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.4.0]
+
+### added
+- `no_std` support. `default-features = ["std"]` keeps existing users on the std path; disable defaults to compile against `core` + `alloc`. embedded users get the kem with `cargo add mlkem-rs --no-default-features`.
+- ci now builds for `thumbv7em-none-eabihf` (cortex-m4) and `wasm32-unknown-unknown` on every push.
+
+### changed
+- `sha3`, `rand_core`, `subtle`, `zeroize` are pulled with `default-features = false`. our `std` feature flips theirs back on.
+- internal modules use `core::` / `alloc::` paths instead of `std::`.
+
 ## [0.3.0]
 
 ### added

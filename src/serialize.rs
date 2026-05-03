@@ -2,6 +2,9 @@
 // packs 256 d-bit coefficients into 32*d bytes, little-endian bit order.
 // d in {1, 4, 10, 12} for ml-kem.
 
+use alloc::vec;
+use alloc::vec::Vec;
+
 use crate::params::N;
 use crate::poly::Poly;
 

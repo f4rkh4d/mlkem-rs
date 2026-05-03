@@ -5,6 +5,9 @@
 // XOF(rho, j, i) = SHAKE128(rho || j || i)
 // PRF_eta(s, b) = SHAKE256(s || b), squeezing 64*eta bytes
 
+use alloc::vec;
+use alloc::vec::Vec;
+
 use sha3::digest::{ExtendableOutput, Update, XofReader};
 use sha3::{Digest, Sha3_256, Sha3_512, Shake128, Shake128Reader, Shake256};
 

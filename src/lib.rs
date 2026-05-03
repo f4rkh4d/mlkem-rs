@@ -1,8 +1,11 @@
 // ml-kem (fips 203) in pure rust. all three security levels.
 // public api lives here, internal modules are crate-private.
 
+#![cfg_attr(not(feature = "std"), no_std)]
 #![warn(clippy::all)]
 #![allow(clippy::needless_range_loop)]
+
+extern crate alloc;
 
 mod compress;
 mod field;
