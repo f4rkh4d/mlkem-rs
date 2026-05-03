@@ -3,6 +3,15 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.8.0]
+
+### added
+- optional `serde` feature. enables `Serialize` + `Deserialize` on every public newtype across all three parameter sets (12 types total). custom impl emits the inner array via `serialize_bytes`, so binary serializers (bincode, postcard, ciborium) see a tight byte-array wire format.
+- `tests/serde_roundtrip.rs` covers bincode round-trip on every type, all three levels.
+
+### changed
+- ci runs the test suite both with and without `--features serde` (matrix expansion on master).
+
 ## [0.7.0]
 
 ### added

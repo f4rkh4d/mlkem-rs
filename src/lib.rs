@@ -113,12 +113,71 @@ macro_rules! mlkem_api {
 
         #[derive(Clone)]
         pub struct $pkty(pub(crate) [u8; $pk]);
+
         #[derive(Clone, ZeroizeOnDrop)]
         pub struct $skty(pub(crate) [u8; $sk]);
+
         #[derive(Clone)]
         pub struct $ctty(pub(crate) [u8; $ct]);
+
         #[derive(Clone, ZeroizeOnDrop)]
         pub struct $ssty(pub(crate) [u8; 32]);
+
+        #[cfg(feature = "serde")]
+        const _: () = {
+            use serde::de::{Error as DeError, SeqAccess, Visitor};
+            use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+            macro_rules! serde_byte_array {
+                ($t:ident, $n:expr) => {
+                    impl Serialize for $t {
+                        fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+                            s.serialize_bytes(&self.0)
+                        }
+                    }
+                    impl<'de> Deserialize<'de> for $t {
+                        fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+                            struct BytesVisitor;
+                            impl<'de> Visitor<'de> for BytesVisitor {
+                                type Value = [u8; $n];
+                                fn expecting(
+                                    &self,
+                                    f: &mut core::fmt::Formatter,
+                                ) -> core::fmt::Result {
+                                    write!(f, concat!("a byte sequence of length ", stringify!($n)))
+                                }
+                                fn visit_bytes<E: DeError>(self, v: &[u8]) -> Result<[u8; $n], E> {
+                                    if v.len() != $n {
+                                        return Err(E::invalid_length(v.len(), &self));
+                                    }
+                                    let mut a = [0u8; $n];
+                                    a.copy_from_slice(v);
+                                    Ok(a)
+                                }
+                                fn visit_seq<A: SeqAccess<'de>>(
+                                    self,
+                                    mut seq: A,
+                                ) -> Result<[u8; $n], A::Error> {
+                                    let mut a = [0u8; $n];
+                                    for i in 0..$n {
+                                        a[i] = seq
+                                            .next_element()?
+                                            .ok_or_else(|| A::Error::invalid_length(i, &self))?;
+                                    }
+                                    Ok(a)
+                                }
+                            }
+                            d.deserialize_bytes(BytesVisitor).map($t)
+                        }
+                    }
+                };
+            }
+
+            serde_byte_array!($pkty, $pk);
+            serde_byte_array!($skty, $sk);
+            serde_byte_array!($ctty, $ct);
+            serde_byte_array!($ssty, 32);
+        };
 
         impl $pkty {
             pub fn as_bytes(&self) -> &[u8; $pk] {

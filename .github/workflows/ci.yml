@@ -26,6 +26,8 @@ jobs:
         run: cargo clippy --release --all-targets -- -D warnings
       - name: test
         run: cargo test --release
+      - name: test (serde feature)
+        run: cargo test --release --features serde
 
   no-std:
     runs-on: ubuntu-latest
