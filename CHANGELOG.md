@@ -3,6 +3,12 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.8.9]
+
+### changed
+- README rewritten end-to-end. now covers features, examples, the full test landscape, and links to all supporting files. badges row gained downloads + msrv + no_std.
+- "things flagged" entry about `Vec<Poly>` allocation timing updated to reflect that the algebraic core has been stack-only since 0.5.0.
+
 ## [0.8.8]
 
 ### added

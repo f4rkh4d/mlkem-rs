@@ -4,7 +4,10 @@ post-quantum kem (ml-kem, formerly kyber) in pure rust. all three security level
 
 [![crates.io](https://img.shields.io/crates/v/mlkem-rs.svg)](https://crates.io/crates/mlkem-rs)
 [![docs.rs](https://img.shields.io/docsrs/mlkem-rs)](https://docs.rs/mlkem-rs)
+[![downloads](https://img.shields.io/crates/d/mlkem-rs.svg)](https://crates.io/crates/mlkem-rs)
 [![ci](https://github.com/f4rkh4d/mlkem-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/f4rkh4d/mlkem-rs/actions)
+[![msrv](https://img.shields.io/badge/msrv-1.70-blue.svg)](#)
+[![no_std](https://img.shields.io/badge/no__std-yes-success.svg)](#)
 [![license](https://img.shields.io/crates/l/mlkem-rs.svg)](#license)
 
 ## what this is
@@ -82,14 +85,29 @@ heap-allocation-wise, the algebraic core (matrix sample, polyvecs, ntt, basemul)
 - `field::barrett_reduce` reduces to `i32` arithmetic with sign-mask normalize. branch-free in source, trusting llvm not to lower the masks to branches. asm has not been verified for every target.
 - `sample::sample_ntt` has variable runtime due to rejection sampling, but it operates only on the public seed `rho`. no secret-dependent timing channel.
 - `kpke::sample_matrix_a` similarly only touches public data.
-- internal scratch is heap-allocated `Vec<Poly>`. allocation timing is not constant. mitigation would be const-generic `K`, see the `no_std` note above.
+- internal scratch is now stack-allocated since 0.5.0 (`MAX_K = 4` upper bound). allocation timing is no longer a side channel for the algebraic ops; only the byte-encode outputs go through `Vec<u8>`.
+
+## features
+
+- `std` (default). standard-library hooks (`std::error::Error` on `LengthError`, std versions of crypto deps).
+- `serde`. `Serialize` / `Deserialize` on every key, ciphertext, and shared-secret newtype across all three parameter sets.
+
+## examples
+
+```sh
+cargo run --release --example handshake
+cargo run --release --example serde_save_restore --features serde
+```
 
 ## links
 
 - [fips 203](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf)
 - [rustcrypto ml-kem](https://github.com/RustCrypto/KEMs)
 - [pq-crystals/kyber reference](https://github.com/pq-crystals/kyber)
-- tests: [`cross_check`](tests/cross_check.rs), [`api`](tests/api.rs), [`kat`](tests/kat.rs)
+- [nist acvp test vectors](https://github.com/usnistgov/ACVP-Server)
+- tests: [`nist_kats`](tests/nist_kats.rs), [`cross_check`](tests/cross_check.rs), [`api`](tests/api.rs), [`stress`](tests/stress.rs), [`serde_roundtrip`](tests/serde_roundtrip.rs)
+- examples: [`handshake`](examples/handshake.rs), [`serde_save_restore`](examples/serde_save_restore.rs)
+- changelog: [CHANGELOG.md](CHANGELOG.md)
 
 ## license
 
