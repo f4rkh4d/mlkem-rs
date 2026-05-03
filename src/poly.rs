@@ -1,10 +1,15 @@
 // polynomials in R_q = Z_3329[X] / (X^256 + 1).
 // two forms: Poly (standard) and PolyNtt (ntt-domain, incomplete basis).
-// add/sub are identical either way; multiplication only makes sense in ntt form.
+// PolyVec / MatrixNtt carry their dimension at runtime so the same code
+// covers ml-kem-512, -768 and -1024.
+
+extern crate alloc;
+use alloc::vec;
+use alloc::vec::Vec;
 
 use crate::field::{fqadd, fqsub, Fe};
 use crate::ntt::{basemul, ntt_forward, ntt_inverse, GAMMAS};
-use crate::params::{K, N};
+use crate::params::N;
 
 #[derive(Clone, Copy)]
 pub struct Poly(pub [Fe; N]);
@@ -64,7 +69,6 @@ impl PolyNtt {
         ntt_inverse(&mut a);
         Poly(a)
     }
-    // pointwise multiply in ntt (incomplete) domain.
     pub fn basemul(&self, other: &PolyNtt) -> PolyNtt {
         let mut r = [0u16; N];
         for i in 0..128 {
@@ -82,34 +86,32 @@ impl PolyNtt {
     }
 }
 
-// vector of K polynomials
-#[derive(Clone, Copy)]
-pub struct PolyVec(pub [Poly; K]);
-#[derive(Clone, Copy)]
-pub struct PolyVecNtt(pub [PolyNtt; K]);
+#[derive(Clone)]
+pub struct PolyVec(pub Vec<Poly>);
 
-impl Default for PolyVec {
-    fn default() -> Self {
-        Self([Poly::zero(); K])
-    }
-}
-impl Default for PolyVecNtt {
-    fn default() -> Self {
-        Self([PolyNtt::zero(); K])
-    }
-}
+#[derive(Clone)]
+pub struct PolyVecNtt(pub Vec<PolyNtt>);
 
 impl PolyVec {
+    pub fn zero(k: usize) -> Self {
+        Self(vec![Poly::zero(); k])
+    }
+    pub fn k(&self) -> usize {
+        self.0.len()
+    }
     pub fn add(&self, other: &PolyVec) -> PolyVec {
-        let mut r = [Poly::zero(); K];
-        for i in 0..K {
+        let k = self.k();
+        debug_assert_eq!(k, other.k());
+        let mut r = vec![Poly::zero(); k];
+        for i in 0..k {
             r[i] = self.0[i].add(&other.0[i]);
         }
         PolyVec(r)
     }
     pub fn ntt(&self) -> PolyVecNtt {
-        let mut r = [PolyNtt::zero(); K];
-        for i in 0..K {
+        let k = self.k();
+        let mut r = vec![PolyNtt::zero(); k];
+        for i in 0..k {
             r[i] = self.0[i].ntt();
         }
         PolyVecNtt(r)
@@ -117,44 +119,59 @@ impl PolyVec {
 }
 
 impl PolyVecNtt {
+    pub fn zero(k: usize) -> Self {
+        Self(vec![PolyNtt::zero(); k])
+    }
+    pub fn k(&self) -> usize {
+        self.0.len()
+    }
     pub fn add(&self, other: &PolyVecNtt) -> PolyVecNtt {
-        let mut r = [PolyNtt::zero(); K];
-        for i in 0..K {
+        let k = self.k();
+        debug_assert_eq!(k, other.k());
+        let mut r = vec![PolyNtt::zero(); k];
+        for i in 0..k {
             r[i] = self.0[i].add(&other.0[i]);
         }
         PolyVecNtt(r)
     }
     pub fn ntt_inverse(&self) -> PolyVec {
-        let mut r = [Poly::zero(); K];
-        for i in 0..K {
+        let k = self.k();
+        let mut r = vec![Poly::zero(); k];
+        for i in 0..k {
             r[i] = self.0[i].ntt_inverse();
         }
         PolyVec(r)
     }
-    // dot product: sum_i self[i] * other[i] in ntt domain.
     pub fn dot(&self, other: &PolyVecNtt) -> PolyNtt {
+        let k = self.k();
+        debug_assert_eq!(k, other.k());
         let mut acc = PolyNtt::zero();
-        for i in 0..K {
+        for i in 0..k {
             acc = acc.add(&self.0[i].basemul(&other.0[i]));
         }
         acc
     }
 }
 
-// kxk matrix in ntt domain. stored row-major.
+// kxk matrix in ntt domain. row-major.
 #[derive(Clone)]
-pub struct MatrixNtt(pub [[PolyNtt; K]; K]);
+pub struct MatrixNtt(pub Vec<Vec<PolyNtt>>);
 
 impl MatrixNtt {
-    pub fn zero() -> Self {
-        Self([[PolyNtt::zero(); K]; K])
+    pub fn zero(k: usize) -> Self {
+        let row = vec![PolyNtt::zero(); k];
+        Self(vec![row; k])
     }
-    // matrix times vector, in ntt domain.
+    pub fn k(&self) -> usize {
+        self.0.len()
+    }
     pub fn mul_vec(&self, v: &PolyVecNtt) -> PolyVecNtt {
-        let mut out = [PolyNtt::zero(); K];
-        for i in 0..K {
+        let k = self.k();
+        debug_assert_eq!(k, v.k());
+        let mut out = vec![PolyNtt::zero(); k];
+        for i in 0..k {
             let mut acc = PolyNtt::zero();
-            for j in 0..K {
+            for j in 0..k {
                 acc = acc.add(&self.0[i][j].basemul(&v.0[j]));
             }
             out[i] = acc;

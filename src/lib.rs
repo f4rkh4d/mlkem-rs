@@ -1,5 +1,5 @@
-// ml-kem-768 (fips 203) in pure rust.
-// public api lives here. everything else is module-private but accessible via crate::.
+// ml-kem (fips 203) in pure rust. all three security levels.
+// public api lives here, internal modules are crate-private.
 
 #![warn(clippy::all)]
 #![allow(clippy::needless_range_loop)]
@@ -19,149 +19,201 @@ use rand_core::{CryptoRng, RngCore};
 use subtle::ConstantTimeEq;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-pub struct MlKem768;
+pub use params::{Params, Params1024, Params512, Params768};
 
-impl MlKem768 {
-    pub const PUBLIC_KEY_SIZE: usize = params::PUBLIC_KEY_SIZE;
-    pub const SECRET_KEY_SIZE: usize = params::SECRET_KEY_SIZE;
-    pub const CIPHERTEXT_SIZE: usize = params::CIPHERTEXT_SIZE;
-    pub const SHARED_SECRET_SIZE: usize = params::SHARED_SECRET_SIZE;
+// macro that defines a public api type for one parameter set.
+// `$name` is the entry point (MlKem512 etc), `$pk/$sk/$ct` are the byte sizes.
+macro_rules! mlkem_api {
+    ($name:ident, $params:ty, $pkty:ident, $skty:ident, $ctty:ident, $ssty:ident,
+     $pk:expr, $sk:expr, $ct:expr) => {
+        pub struct $name;
 
-    /// deterministic keygen from a 64-byte seed (d || z).
-    pub fn keygen_deterministic(seed: &[u8; 64]) -> (PublicKey, SecretKey) {
-        let mut d = [0u8; 32];
-        let mut z = [0u8; 32];
-        d.copy_from_slice(&seed[..32]);
-        z.copy_from_slice(&seed[32..]);
-        let (pk, sk) = mlkem::keygen(&d, &z);
-        (PublicKey(pk), SecretKey(sk))
-    }
+        impl $name {
+            pub const PUBLIC_KEY_SIZE: usize = $pk;
+            pub const SECRET_KEY_SIZE: usize = $sk;
+            pub const CIPHERTEXT_SIZE: usize = $ct;
+            pub const SHARED_SECRET_SIZE: usize = 32;
 
-    /// random keygen using a CSPRNG.
-    pub fn keygen<R: RngCore + CryptoRng>(rng: &mut R) -> (PublicKey, SecretKey) {
-        let mut seed = [0u8; 64];
-        rng.fill_bytes(&mut seed);
-        Self::keygen_deterministic(&seed)
-    }
+            /// deterministic keygen from a 64-byte seed (d || z).
+            pub fn keygen_deterministic(seed: &[u8; 64]) -> ($pkty, $skty) {
+                let mut d = [0u8; 32];
+                let mut z = [0u8; 32];
+                d.copy_from_slice(&seed[..32]);
+                z.copy_from_slice(&seed[32..]);
+                let (pk, sk) = mlkem::MlKem::<$params>::keygen(&d, &z);
+                let mut pk_arr = [0u8; $pk];
+                let mut sk_arr = [0u8; $sk];
+                pk_arr.copy_from_slice(&pk);
+                sk_arr.copy_from_slice(&sk);
+                ($pkty(pk_arr), $skty(sk_arr))
+            }
 
-    pub fn encapsulate_deterministic(pk: &PublicKey, m: &[u8; 32]) -> (Ciphertext, SharedSecret) {
-        let (ct, ss) = mlkem::encapsulate(&pk.0, m);
-        (Ciphertext(ct), SharedSecret(ss))
-    }
+            pub fn keygen<R: RngCore + CryptoRng>(rng: &mut R) -> ($pkty, $skty) {
+                let mut seed = [0u8; 64];
+                rng.fill_bytes(&mut seed);
+                Self::keygen_deterministic(&seed)
+            }
 
-    pub fn encapsulate<R: RngCore + CryptoRng>(
-        pk: &PublicKey,
-        rng: &mut R,
-    ) -> (Ciphertext, SharedSecret) {
-        let mut m = [0u8; 32];
-        rng.fill_bytes(&mut m);
-        Self::encapsulate_deterministic(pk, &m)
-    }
+            pub fn encapsulate_deterministic(pk: &$pkty, m: &[u8; 32]) -> ($ctty, $ssty) {
+                let (ct, ss) = mlkem::MlKem::<$params>::encapsulate(&pk.0, m);
+                let mut ct_arr = [0u8; $ct];
+                ct_arr.copy_from_slice(&ct);
+                ($ctty(ct_arr), $ssty(ss))
+            }
 
-    pub fn decapsulate(sk: &SecretKey, ct: &Ciphertext) -> SharedSecret {
-        SharedSecret(mlkem::decapsulate(&sk.0, &ct.0))
-    }
+            pub fn encapsulate<R: RngCore + CryptoRng>(
+                pk: &$pkty,
+                rng: &mut R,
+            ) -> ($ctty, $ssty) {
+                let mut m = [0u8; 32];
+                rng.fill_bytes(&mut m);
+                Self::encapsulate_deterministic(pk, &m)
+            }
+
+            pub fn decapsulate(sk: &$skty, ct: &$ctty) -> $ssty {
+                $ssty(mlkem::MlKem::<$params>::decapsulate(&sk.0, &ct.0))
+            }
+        }
+
+        #[derive(Clone)]
+        pub struct $pkty(pub(crate) [u8; $pk]);
+        #[derive(Clone, ZeroizeOnDrop)]
+        pub struct $skty(pub(crate) [u8; $sk]);
+        #[derive(Clone)]
+        pub struct $ctty(pub(crate) [u8; $ct]);
+        #[derive(Clone, ZeroizeOnDrop)]
+        pub struct $ssty(pub(crate) [u8; 32]);
+
+        impl $pkty {
+            pub fn as_bytes(&self) -> &[u8; $pk] {
+                &self.0
+            }
+            pub fn from_bytes(b: &[u8; $pk]) -> Self {
+                Self(*b)
+            }
+        }
+        impl $skty {
+            pub fn as_bytes(&self) -> &[u8; $sk] {
+                &self.0
+            }
+            pub fn from_bytes(b: &[u8; $sk]) -> Self {
+                Self(*b)
+            }
+        }
+        impl $ctty {
+            pub fn as_bytes(&self) -> &[u8; $ct] {
+                &self.0
+            }
+            pub fn from_bytes(b: &[u8; $ct]) -> Self {
+                Self(*b)
+            }
+        }
+        impl $ssty {
+            pub fn as_bytes(&self) -> &[u8; 32] {
+                &self.0
+            }
+        }
+
+        impl PartialEq for $pkty {
+            fn eq(&self, other: &Self) -> bool {
+                self.0.ct_eq(&other.0).into()
+            }
+        }
+        impl Eq for $pkty {}
+        impl PartialEq for $skty {
+            fn eq(&self, other: &Self) -> bool {
+                self.0.as_slice().ct_eq(other.0.as_slice()).into()
+            }
+        }
+        impl Eq for $skty {}
+        impl PartialEq for $ctty {
+            fn eq(&self, other: &Self) -> bool {
+                self.0.ct_eq(&other.0).into()
+            }
+        }
+        impl Eq for $ctty {}
+        impl PartialEq for $ssty {
+            fn eq(&self, other: &Self) -> bool {
+                self.0.ct_eq(&other.0).into()
+            }
+        }
+        impl Eq for $ssty {}
+
+        impl core::fmt::Debug for $pkty {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, concat!(stringify!($pkty), "(..{} bytes..)"), self.0.len())
+            }
+        }
+        impl core::fmt::Debug for $skty {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, concat!(stringify!($skty), "(..REDACTED..)"))
+            }
+        }
+        impl core::fmt::Debug for $ctty {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, concat!(stringify!($ctty), "(..{} bytes..)"), self.0.len())
+            }
+        }
+        impl core::fmt::Debug for $ssty {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, concat!(stringify!($ssty), "(..REDACTED..)"))
+            }
+        }
+
+        impl Zeroize for $skty {
+            fn zeroize(&mut self) {
+                self.0.zeroize();
+            }
+        }
+        impl Zeroize for $ssty {
+            fn zeroize(&mut self) {
+                self.0.zeroize();
+            }
+        }
+    };
 }
 
-#[derive(Clone)]
-pub struct PublicKey(pub(crate) [u8; params::PUBLIC_KEY_SIZE]);
-#[derive(Clone, ZeroizeOnDrop)]
-pub struct SecretKey(pub(crate) [u8; params::SECRET_KEY_SIZE]);
-#[derive(Clone)]
-pub struct Ciphertext(pub(crate) [u8; params::CIPHERTEXT_SIZE]);
-#[derive(Clone, ZeroizeOnDrop)]
-pub struct SharedSecret(pub(crate) [u8; 32]);
+// ml-kem-512: pk 800, sk 1632, ct 768. fips 203 table 3, security category 1.
+mlkem_api!(
+    MlKem512,
+    Params512,
+    PublicKey512,
+    SecretKey512,
+    Ciphertext512,
+    SharedSecret512,
+    800,
+    1632,
+    768
+);
 
-impl PublicKey {
-    pub fn as_bytes(&self) -> &[u8; params::PUBLIC_KEY_SIZE] {
-        &self.0
-    }
-    pub fn from_bytes(b: &[u8; params::PUBLIC_KEY_SIZE]) -> Self {
-        Self(*b)
-    }
-}
+// ml-kem-768: pk 1184, sk 2400, ct 1088. security category 3 (default if you must pick one).
+mlkem_api!(
+    MlKem768,
+    Params768,
+    PublicKey768,
+    SecretKey768,
+    Ciphertext768,
+    SharedSecret768,
+    1184,
+    2400,
+    1088
+);
 
-impl SecretKey {
-    pub fn as_bytes(&self) -> &[u8; params::SECRET_KEY_SIZE] {
-        &self.0
-    }
-    pub fn from_bytes(b: &[u8; params::SECRET_KEY_SIZE]) -> Self {
-        Self(*b)
-    }
-}
+// ml-kem-1024: pk 1568, sk 3168, ct 1568. security category 5.
+mlkem_api!(
+    MlKem1024,
+    Params1024,
+    PublicKey1024,
+    SecretKey1024,
+    Ciphertext1024,
+    SharedSecret1024,
+    1568,
+    3168,
+    1568
+);
 
-impl Ciphertext {
-    pub fn as_bytes(&self) -> &[u8; params::CIPHERTEXT_SIZE] {
-        &self.0
-    }
-    pub fn from_bytes(b: &[u8; params::CIPHERTEXT_SIZE]) -> Self {
-        Self(*b)
-    }
-}
-
-impl SharedSecret {
-    pub fn as_bytes(&self) -> &[u8; 32] {
-        &self.0
-    }
-}
-
-// ct-eq for sensitive types. pk/ct equality is public but harmless to also ct-eq.
-impl PartialEq for PublicKey {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.ct_eq(&other.0).into()
-    }
-}
-impl Eq for PublicKey {}
-
-impl PartialEq for SecretKey {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.as_slice().ct_eq(other.0.as_slice()).into()
-    }
-}
-impl Eq for SecretKey {}
-
-impl PartialEq for Ciphertext {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.ct_eq(&other.0).into()
-    }
-}
-impl Eq for Ciphertext {}
-
-impl PartialEq for SharedSecret {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.ct_eq(&other.0).into()
-    }
-}
-impl Eq for SharedSecret {}
-
-impl std::fmt::Debug for PublicKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "PublicKey(..{} bytes..)", self.0.len())
-    }
-}
-impl std::fmt::Debug for SecretKey {
-    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(_f, "SecretKey(..REDACTED..)")
-    }
-}
-impl std::fmt::Debug for Ciphertext {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Ciphertext(..{} bytes..)", self.0.len())
-    }
-}
-impl std::fmt::Debug for SharedSecret {
-    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(_f, "SharedSecret(..REDACTED..)")
-    }
-}
-
-impl Zeroize for SecretKey {
-    fn zeroize(&mut self) {
-        self.0.zeroize();
-    }
-}
-impl Zeroize for SharedSecret {
-    fn zeroize(&mut self) {
-        self.0.zeroize();
-    }
-}
+// back-compat aliases for the old 0.1 api.
+pub type PublicKey = PublicKey768;
+pub type SecretKey = SecretKey768;
+pub type Ciphertext = Ciphertext768;
+pub type SharedSecret = SharedSecret768;

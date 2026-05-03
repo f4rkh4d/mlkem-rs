@@ -344,12 +344,13 @@ dependencies = [
 
 [[package]]
 name = "mlkem-rs"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "criterion",
  "hex",
  "ml-kem",
  "rand",
+ "rand_chacha",
  "rand_core",
  "sha3",
  "subtle",
