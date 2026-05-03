@@ -3,6 +3,11 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.8.4]
+
+### added
+- `rust-version = "1.70"` pinned in `Cargo.toml`. cargo will refuse to build the crate on older toolchains rather than fail mid-compile with confusing diagnostics.
+
 ## [0.8.3]
 
 ### added
