@@ -1,8 +1,58 @@
-// ml-kem (fips 203) in pure rust. all three security levels.
-// public api lives here, internal modules are crate-private.
+//! # mlkem
+//!
+//! post-quantum key encapsulation per [fips 203][1] (ml-kem, formerly kyber),
+//! in pure rust. all three security levels.
+//!
+//! ## quick start
+//!
+//! ```
+//! use mlkem::MlKem768;
+//! use rand::thread_rng;
+//!
+//! let mut rng = thread_rng();
+//! let (pk, sk) = MlKem768::keygen(&mut rng);
+//! let (ct, ss_alice) = MlKem768::encapsulate(&pk, &mut rng);
+//! let ss_bob = MlKem768::decapsulate(&sk, &ct);
+//! assert_eq!(ss_alice.as_bytes(), ss_bob.as_bytes());
+//! ```
+//!
+//! ## variants
+//!
+//! - [`MlKem512`]: nist security category 1 (~ aes-128). pk 800, sk 1632, ct 768.
+//! - [`MlKem768`]: nist security category 3 (~ aes-192). pk 1184, sk 2400, ct 1088.
+//! - [`MlKem1024`]: nist security category 5 (~ aes-256). pk 1568, sk 3168, ct 1568.
+//!
+//! all three implement the [`Kem`] trait, so callers can be generic.
+//!
+//! ## features
+//!
+//! - `std` (default): enables `std::error::Error` impl on [`LengthError`] and uses
+//!   the std versions of the crypto deps.
+//! - `serde`: implements `Serialize` + `Deserialize` on every key, ciphertext,
+//!   and shared-secret newtype across all three parameter sets.
+//!
+//! ## correctness
+//!
+//! - all 180 official nist acvp test vectors pass byte-for-byte (75 keygen,
+//!   75 encapsulation, 30 decapsulation, distributed evenly across the three
+//!   parameter sets).
+//! - 3000-seed cross-check against the audited [`ml-kem`][2] crate.
+//! - 24000 stable-rust stress iterations on every `cargo test`.
+//! - cargo-fuzz harness in `fuzz/`.
+//!
+//! ## security and stability
+//!
+//! this crate is **not audited**. for production cryptography, use the
+//! audited [`ml-kem`][2] crate from rustcrypto. this implementation exists
+//! to be readable end-to-end, suitable for study, tooling, and tests.
+//!
+//! [1]: https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.203.pdf
+//! [2]: https://crates.io/crates/ml-kem
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![warn(clippy::all)]
+#![warn(missing_debug_implementations)]
 #![allow(clippy::needless_range_loop)]
 
 extern crate alloc;

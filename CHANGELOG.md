@@ -3,6 +3,13 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.8.6]
+
+### added
+- crate-level rustdoc with quick-start, parameter-set summary, feature list, and a security/stability note. visible at the top of [docs.rs/mlkem-rs](https://docs.rs/mlkem-rs).
+- `#[cfg_attr(docsrs, feature(doc_auto_cfg))]` so docs.rs renders feature-gated items with the right `(features = "...")` annotations.
+- crate-level lint `missing_debug_implementations` so any future newtype that forgets a `Debug` impl fails ci.
+
 ## [0.8.5]
 
 ### added
