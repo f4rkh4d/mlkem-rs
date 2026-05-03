@@ -16,8 +16,7 @@ pub struct MlKem<P: Params>(PhantomData<P>);
 
 impl<P: Params> MlKem<P> {
     pub const PUBLIC_KEY_SIZE: usize = Kpke::<P>::EK_PKE_BYTES;
-    pub const SECRET_KEY_SIZE: usize =
-        Kpke::<P>::DK_PKE_BYTES + Kpke::<P>::EK_PKE_BYTES + 32 + 32;
+    pub const SECRET_KEY_SIZE: usize = Kpke::<P>::DK_PKE_BYTES + Kpke::<P>::EK_PKE_BYTES + 32 + 32;
     pub const CIPHERTEXT_SIZE: usize = Kpke::<P>::CIPHERTEXT_SIZE;
 
     pub fn keygen(d: &[u8; 32], z: &[u8; 32]) -> (Vec<u8>, Vec<u8>) {

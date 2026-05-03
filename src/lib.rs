@@ -61,10 +61,7 @@ macro_rules! mlkem_api {
                 ($ctty(ct_arr), $ssty(ss))
             }
 
-            pub fn encapsulate<R: RngCore + CryptoRng>(
-                pk: &$pkty,
-                rng: &mut R,
-            ) -> ($ctty, $ssty) {
+            pub fn encapsulate<R: RngCore + CryptoRng>(pk: &$pkty, rng: &mut R) -> ($ctty, $ssty) {
                 let mut m = [0u8; 32];
                 rng.fill_bytes(&mut m);
                 Self::encapsulate_deterministic(pk, &m)
@@ -141,7 +138,11 @@ macro_rules! mlkem_api {
 
         impl core::fmt::Debug for $pkty {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, concat!(stringify!($pkty), "(..{} bytes..)"), self.0.len())
+                write!(
+                    f,
+                    concat!(stringify!($pkty), "(..{} bytes..)"),
+                    self.0.len()
+                )
             }
         }
         impl core::fmt::Debug for $skty {
@@ -151,7 +152,11 @@ macro_rules! mlkem_api {
         }
         impl core::fmt::Debug for $ctty {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, concat!(stringify!($ctty), "(..{} bytes..)"), self.0.len())
+                write!(
+                    f,
+                    concat!(stringify!($ctty), "(..{} bytes..)"),
+                    self.0.len()
+                )
             }
         }
         impl core::fmt::Debug for $ssty {

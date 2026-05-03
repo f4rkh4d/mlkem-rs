@@ -7,7 +7,7 @@ macro_rules! api_tests {
     ($mod:ident, $kem:ident, $pk:ty, $sk:ty, $ct:ty, $pk_size:expr, $sk_size:expr, $ct_size:expr) => {
         mod $mod {
             use super::*;
-            use mlkem::{$kem, $pk, $sk, $ct};
+            use mlkem::{$ct, $kem, $pk, $sk};
 
             #[test]
             fn alice_bob_handshake() {
