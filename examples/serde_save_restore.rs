@@ -24,9 +24,12 @@ fn main() {
 
     fs::write(pk_path, bincode::serialize(&pk).unwrap()).unwrap();
     fs::write(sk_path, bincode::serialize(&sk).unwrap()).unwrap();
-    println!("wrote {} ({}b) and {} ({}b)",
-        pk_path.display(), fs::metadata(pk_path).unwrap().len(),
-        sk_path.display(), fs::metadata(sk_path).unwrap().len(),
+    println!(
+        "wrote {} ({}b) and {} ({}b)",
+        pk_path.display(),
+        fs::metadata(pk_path).unwrap().len(),
+        sk_path.display(),
+        fs::metadata(sk_path).unwrap().len(),
     );
 
     let pk_loaded: PublicKey768 = bincode::deserialize(&fs::read(pk_path).unwrap()).unwrap();
