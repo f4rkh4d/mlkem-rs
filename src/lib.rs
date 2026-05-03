@@ -24,6 +24,42 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 pub use params::{Params, Params1024, Params512, Params768};
 
+/// generic interface implemented by `MlKem512`, `MlKem768` and `MlKem1024`.
+/// lets you write code that picks a parameter set at instantiation time.
+///
+/// ```
+/// use mlkem::{Kem, MlKem768};
+/// use rand::thread_rng;
+///
+/// fn handshake<K: Kem>() -> bool {
+///     let mut rng = thread_rng();
+///     let (pk, sk) = K::keygen(&mut rng);
+///     let (ct, ss_a) = K::encapsulate(&pk, &mut rng);
+///     let ss_b = K::decapsulate(&sk, &ct);
+///     ss_a.as_ref() == ss_b.as_ref()
+/// }
+///
+/// assert!(handshake::<MlKem768>());
+/// ```
+pub trait Kem {
+    type PublicKey: Clone + AsRef<[u8]>;
+    type SecretKey: Clone;
+    type Ciphertext: Clone + AsRef<[u8]>;
+    type SharedSecret: Clone + AsRef<[u8]>;
+
+    const PUBLIC_KEY_SIZE: usize;
+    const SECRET_KEY_SIZE: usize;
+    const CIPHERTEXT_SIZE: usize;
+    const SHARED_SECRET_SIZE: usize = 32;
+
+    fn keygen<R: RngCore + CryptoRng>(rng: &mut R) -> (Self::PublicKey, Self::SecretKey);
+    fn encapsulate<R: RngCore + CryptoRng>(
+        pk: &Self::PublicKey,
+        rng: &mut R,
+    ) -> (Self::Ciphertext, Self::SharedSecret);
+    fn decapsulate(sk: &Self::SecretKey, ct: &Self::Ciphertext) -> Self::SharedSecret;
+}
+
 // macro that defines a public api type for one parameter set.
 // `$name` is the entry point (MlKem512 etc), `$pk/$sk/$ct` are the byte sizes.
 macro_rules! mlkem_api {
@@ -176,6 +212,47 @@ macro_rules! mlkem_api {
         impl Zeroize for $ssty {
             fn zeroize(&mut self) {
                 self.0.zeroize();
+            }
+        }
+
+        impl AsRef<[u8]> for $pkty {
+            fn as_ref(&self) -> &[u8] {
+                &self.0
+            }
+        }
+        impl AsRef<[u8]> for $ctty {
+            fn as_ref(&self) -> &[u8] {
+                &self.0
+            }
+        }
+        impl AsRef<[u8]> for $skty {
+            fn as_ref(&self) -> &[u8] {
+                &self.0
+            }
+        }
+        impl AsRef<[u8]> for $ssty {
+            fn as_ref(&self) -> &[u8] {
+                &self.0
+            }
+        }
+
+        impl Kem for $name {
+            type PublicKey = $pkty;
+            type SecretKey = $skty;
+            type Ciphertext = $ctty;
+            type SharedSecret = $ssty;
+            const PUBLIC_KEY_SIZE: usize = $pk;
+            const SECRET_KEY_SIZE: usize = $sk;
+            const CIPHERTEXT_SIZE: usize = $ct;
+
+            fn keygen<R: RngCore + CryptoRng>(rng: &mut R) -> ($pkty, $skty) {
+                <$name>::keygen(rng)
+            }
+            fn encapsulate<R: RngCore + CryptoRng>(pk: &$pkty, rng: &mut R) -> ($ctty, $ssty) {
+                <$name>::encapsulate(pk, rng)
+            }
+            fn decapsulate(sk: &$skty, ct: &$ctty) -> $ssty {
+                <$name>::decapsulate(sk, ct)
             }
         }
     };

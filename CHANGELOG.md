@@ -3,6 +3,16 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.7.0]
+
+### added
+- `Kem` trait abstracting over `MlKem512` / `MlKem768` / `MlKem1024`. callers can now write functions generic over the parameter set, picking it at instantiation time.
+- `AsRef<[u8]>` on every key, ciphertext and shared-secret newtype, all three levels. lets you pipe outputs into anything that accepts `&[u8]` without `.as_bytes()` plumbing.
+- doctest in the `Kem` rustdoc that performs a full handshake; runs on every `cargo test`.
+
+### notes
+- algorithm did not change; this is a usability release. the trait is purely additive, the existing per-level static methods on `MlKem768` etc keep working.
+
 ## [0.6.0]
 
 ### added
