@@ -3,6 +3,11 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.8.1]
+
+### fixed
+- `[package.metadata.docs.rs]` set so docs.rs builds with `all-features = true`. without this the `serde` feature additions and the `Kem` trait doctest were invisible on docs.rs.
+
 ## [0.8.0]
 
 ### added

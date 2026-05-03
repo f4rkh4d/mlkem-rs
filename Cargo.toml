@@ -1,6 +1,6 @@
 [package]
 name = "mlkem-rs"
-version = "0.8.0"
+version = "0.8.1"
 edition = "2021"
 description = "ml-kem (kyber) post-quantum key encapsulation, from scratch in pure rust, all three security levels, nist-kat verified"
 license = "MIT OR Apache-2.0"
@@ -8,6 +8,10 @@ repository = "https://github.com/f4rkh4d/mlkem-rs"
 readme = "README.md"
 keywords = ["crypto", "post-quantum", "kem", "kyber", "ml-kem"]
 categories = ["cryptography", "no-std"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [lib]
 name = "mlkem"
