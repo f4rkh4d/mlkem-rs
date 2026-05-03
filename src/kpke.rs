@@ -34,7 +34,7 @@ impl<P: Params> Kpke<P> {
                 } else {
                     (j as u8, i as u8)
                 };
-                m.0[i][j] = sample_ntt(rho, jj, ii);
+                m.data[i][j] = sample_ntt(rho, jj, ii);
             }
         }
         m
@@ -44,7 +44,7 @@ impl<P: Params> Kpke<P> {
         let k = v.k();
         let mut out = Vec::with_capacity(POLY_BYTES * k);
         for i in 0..k {
-            out.extend(byte_encode(&Poly(v.0[i].0), 12));
+            out.extend(byte_encode(&Poly(v.data[i].0), 12));
         }
         out
     }
@@ -55,7 +55,7 @@ impl<P: Params> Kpke<P> {
         let mut v = PolyVecNtt::zero(k);
         for i in 0..k {
             let p = byte_decode(&b[i * POLY_BYTES..(i + 1) * POLY_BYTES], 12);
-            v.0[i] = PolyNtt(p.0);
+            v.data[i] = PolyNtt(p.0);
         }
         v
     }
@@ -73,10 +73,10 @@ impl<P: Params> Kpke<P> {
         let mut s_vec = PolyVec::zero(k);
         let mut e_vec = PolyVec::zero(k);
         for i in 0..k {
-            s_vec.0[i] = sample_cbd_poly(&sigma, i as u8, P::ETA1);
+            s_vec.data[i] = sample_cbd_poly(&sigma, i as u8, P::ETA1);
         }
         for i in 0..k {
-            e_vec.0[i] = sample_cbd_poly(&sigma, (k + i) as u8, P::ETA1);
+            e_vec.data[i] = sample_cbd_poly(&sigma, (k + i) as u8, P::ETA1);
         }
 
         let s_hat = s_vec.ntt();
@@ -108,10 +108,10 @@ impl<P: Params> Kpke<P> {
         let mut r_vec = PolyVec::zero(k);
         let mut e1_vec = PolyVec::zero(k);
         for i in 0..k {
-            r_vec.0[i] = sample_cbd_poly(r, i as u8, P::ETA1);
+            r_vec.data[i] = sample_cbd_poly(r, i as u8, P::ETA1);
         }
         for i in 0..k {
-            e1_vec.0[i] = sample_cbd_poly(r, (k + i) as u8, P::ETA2);
+            e1_vec.data[i] = sample_cbd_poly(r, (k + i) as u8, P::ETA2);
         }
         let e2 = sample_cbd_poly(r, (2 * k) as u8, P::ETA2);
 
@@ -128,7 +128,7 @@ impl<P: Params> Kpke<P> {
 
         let mut c1 = Vec::with_capacity(Self::CT_C1_BYTES);
         for i in 0..k {
-            let cc = compress_poly(&u.0[i], P::DU as u32);
+            let cc = compress_poly(&u.data[i], P::DU as u32);
             c1.extend(byte_encode(&cc, P::DU as u32));
         }
         let cv = compress_poly(&v, P::DV as u32);
@@ -151,7 +151,7 @@ impl<P: Params> Kpke<P> {
         let mut u = PolyVec::zero(k);
         for i in 0..k {
             let comp = byte_decode(&c1[i * du_bytes..(i + 1) * du_bytes], P::DU as u32);
-            u.0[i] = decompress_poly(&comp, P::DU as u32);
+            u.data[i] = decompress_poly(&comp, P::DU as u32);
         }
         let comp_v = byte_decode(c2, P::DV as u32);
         let v = decompress_poly(&comp_v, P::DV as u32);

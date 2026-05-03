@@ -3,6 +3,24 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.5.0]
+
+### added
+- `MAX_K` const exposed as the upper bound (= 4) on parameter rank.
+
+### changed
+- `PolyVec`, `PolyVecNtt`, `MatrixNtt` now hold `[Poly; MAX_K]` (or `[[..; MAX_K]; MAX_K]` for the matrix) plus a runtime `k`. they are `Copy` and live entirely on the stack. the algebraic hot path (matrix sample, polyvec ops, ntt, basemul) is allocation-free.
+- field renamed from tuple-style `.0` to named `.data` to make the intent obvious in code reading the structures.
+
+### performance (apple m-series, vs 0.4.0)
+- ml-kem-512  keygen 28 → 26 µs
+- ml-kem-768  keygen 46 → 40 µs (-13%)
+- ml-kem-1024 keygen 69 → 57 µs (-17%)
+- encap / decap unchanged: those paths were already light on `Vec` allocs
+
+### internals
+- `MatrixNtt` for ml-kem-1024 occupies 4×4×poly = 8 KiB on the stack. fine on linux/macos and on the embedded targets in our ci matrix; if you target a 4 KiB stack mcu, bring your own.
+
 ## [0.4.0]
 
 ### added

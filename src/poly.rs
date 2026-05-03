@@ -1,15 +1,15 @@
 // polynomials in R_q = Z_3329[X] / (X^256 + 1).
 // two forms: Poly (standard) and PolyNtt (ntt-domain, incomplete basis).
-// PolyVec / MatrixNtt carry their dimension at runtime so the same code
-// covers ml-kem-512, -768 and -1024.
-
-extern crate alloc;
-use alloc::vec;
-use alloc::vec::Vec;
+// PolyVec / MatrixNtt are stack-allocated with capacity MAX_K (= 4) and
+// carry an active length `k`. covers ml-kem-512 (k=2), -768 (k=3), -1024 (k=4)
+// without any heap allocation in the algebraic hot path.
 
 use crate::field::{fqadd, fqsub, Fe};
 use crate::ntt::{basemul, ntt_forward, ntt_inverse, GAMMAS};
 use crate::params::N;
+
+/// upper bound on the rank used by any ml-kem parameter set.
+pub const MAX_K: usize = 4;
 
 #[derive(Clone, Copy)]
 pub struct Poly(pub [Fe; N]);
@@ -86,96 +86,115 @@ impl PolyNtt {
     }
 }
 
-#[derive(Clone)]
-pub struct PolyVec(pub Vec<Poly>);
+/// vector of up to MAX_K polynomials in R_q. `k` tracks how many slots
+/// are active; entries `[k..]` are zero and ignored.
+#[derive(Clone, Copy)]
+pub struct PolyVec {
+    pub data: [Poly; MAX_K],
+    pub k: usize,
+}
 
-#[derive(Clone)]
-pub struct PolyVecNtt(pub Vec<PolyNtt>);
+#[derive(Clone, Copy)]
+pub struct PolyVecNtt {
+    pub data: [PolyNtt; MAX_K],
+    pub k: usize,
+}
 
 impl PolyVec {
     pub fn zero(k: usize) -> Self {
-        Self(vec![Poly::zero(); k])
+        Self {
+            data: [Poly::zero(); MAX_K],
+            k,
+        }
     }
+    #[inline]
+    #[allow(dead_code)]
     pub fn k(&self) -> usize {
-        self.0.len()
+        self.k
     }
     pub fn add(&self, other: &PolyVec) -> PolyVec {
-        let k = self.k();
-        debug_assert_eq!(k, other.k());
-        let mut r = vec![Poly::zero(); k];
-        for i in 0..k {
-            r[i] = self.0[i].add(&other.0[i]);
+        debug_assert_eq!(self.k, other.k);
+        let mut r = PolyVec::zero(self.k);
+        for i in 0..self.k {
+            r.data[i] = self.data[i].add(&other.data[i]);
         }
-        PolyVec(r)
+        r
     }
     pub fn ntt(&self) -> PolyVecNtt {
-        let k = self.k();
-        let mut r = vec![PolyNtt::zero(); k];
-        for i in 0..k {
-            r[i] = self.0[i].ntt();
+        let mut r = PolyVecNtt::zero(self.k);
+        for i in 0..self.k {
+            r.data[i] = self.data[i].ntt();
         }
-        PolyVecNtt(r)
+        r
     }
 }
 
 impl PolyVecNtt {
     pub fn zero(k: usize) -> Self {
-        Self(vec![PolyNtt::zero(); k])
+        Self {
+            data: [PolyNtt::zero(); MAX_K],
+            k,
+        }
     }
+    #[inline]
+    #[allow(dead_code)]
     pub fn k(&self) -> usize {
-        self.0.len()
+        self.k
     }
     pub fn add(&self, other: &PolyVecNtt) -> PolyVecNtt {
-        let k = self.k();
-        debug_assert_eq!(k, other.k());
-        let mut r = vec![PolyNtt::zero(); k];
-        for i in 0..k {
-            r[i] = self.0[i].add(&other.0[i]);
+        debug_assert_eq!(self.k, other.k);
+        let mut r = PolyVecNtt::zero(self.k);
+        for i in 0..self.k {
+            r.data[i] = self.data[i].add(&other.data[i]);
         }
-        PolyVecNtt(r)
+        r
     }
     pub fn ntt_inverse(&self) -> PolyVec {
-        let k = self.k();
-        let mut r = vec![Poly::zero(); k];
-        for i in 0..k {
-            r[i] = self.0[i].ntt_inverse();
+        let mut r = PolyVec::zero(self.k);
+        for i in 0..self.k {
+            r.data[i] = self.data[i].ntt_inverse();
         }
-        PolyVec(r)
+        r
     }
     pub fn dot(&self, other: &PolyVecNtt) -> PolyNtt {
-        let k = self.k();
-        debug_assert_eq!(k, other.k());
+        debug_assert_eq!(self.k, other.k);
         let mut acc = PolyNtt::zero();
-        for i in 0..k {
-            acc = acc.add(&self.0[i].basemul(&other.0[i]));
+        for i in 0..self.k {
+            acc = acc.add(&self.data[i].basemul(&other.data[i]));
         }
         acc
     }
 }
 
-// kxk matrix in ntt domain. row-major.
-#[derive(Clone)]
-pub struct MatrixNtt(pub Vec<Vec<PolyNtt>>);
+/// kxk matrix in ntt domain, stack-allocated with MAX_K x MAX_K.
+#[derive(Clone, Copy)]
+pub struct MatrixNtt {
+    pub data: [[PolyNtt; MAX_K]; MAX_K],
+    pub k: usize,
+}
 
 impl MatrixNtt {
     pub fn zero(k: usize) -> Self {
-        let row = vec![PolyNtt::zero(); k];
-        Self(vec![row; k])
+        Self {
+            data: [[PolyNtt::zero(); MAX_K]; MAX_K],
+            k,
+        }
     }
+    #[inline]
+    #[allow(dead_code)]
     pub fn k(&self) -> usize {
-        self.0.len()
+        self.k
     }
     pub fn mul_vec(&self, v: &PolyVecNtt) -> PolyVecNtt {
-        let k = self.k();
-        debug_assert_eq!(k, v.k());
-        let mut out = vec![PolyNtt::zero(); k];
-        for i in 0..k {
+        debug_assert_eq!(self.k, v.k);
+        let mut out = PolyVecNtt::zero(self.k);
+        for i in 0..self.k {
             let mut acc = PolyNtt::zero();
-            for j in 0..k {
-                acc = acc.add(&self.0[i][j].basemul(&v.0[j]));
+            for j in 0..self.k {
+                acc = acc.add(&self.data[i][j].basemul(&v.data[j]));
             }
-            out[i] = acc;
+            out.data[i] = acc;
         }
-        PolyVecNtt(out)
+        out
     }
 }

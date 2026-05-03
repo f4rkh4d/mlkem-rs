@@ -62,11 +62,13 @@ apple m-series, `cargo bench` with `opt-level = 3, lto = "thin"`, no simd, plain
 
 | op           | ml-kem-512 | ml-kem-768 | ml-kem-1024 |
 |--------------|-----------:|-----------:|------------:|
-| keygen       | 28 µs      | 46 µs      | 69 µs       |
-| encapsulate  | 25 µs      | 39 µs      | 60 µs       |
-| decapsulate  | 33 µs      | 50 µs      | 76 µs       |
+| keygen       | 26 µs      | 40 µs      | 57 µs       |
+| encapsulate  | 25 µs      | 38 µs      | 60 µs       |
+| decapsulate  | 33 µs      | 50 µs      | 77 µs       |
 
-for reference, [rustcrypto `ml-kem`](https://crates.io/crates/ml-kem) on the same machine: 13 / 12 / 17 µs at 512, 23 / 20 / 25 at 768, 36 / 31 / 38 at 1024. so this crate sits at roughly 2x the cycles of the audited reference, consistently across all three levels. the gap is from no montgomery and no simd. enough for tooling and study, not enough if you serve a million handshakes a second.
+for reference, [rustcrypto `ml-kem`](https://crates.io/crates/ml-kem) on the same machine: 13 / 12 / 17 µs at 512, 23 / 20 / 25 at 768, 36 / 31 / 38 at 1024. so this crate sits at roughly 1.7-2x the cycles of the audited reference, consistently across all three levels. the gap is from no montgomery and no simd. enough for tooling and study, not enough if you serve a million handshakes a second.
+
+heap-allocation-wise, the algebraic core (matrix sample, polyvecs, ntt, basemul) is allocation-free since 0.5.0. the only allocations left are the byte-encoded outputs `Vec<u8>` returned by `kpke::keygen` / `encrypt`, which are then copied into the public api's fixed-size arrays.
 
 ## what is missing
 
