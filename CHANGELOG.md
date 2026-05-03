@@ -3,6 +3,12 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.8.11]
+
+### fixed
+- `pub use poly::MAX_K;` so the `MAX_K` const promised by the 0.5.0 changelog is actually reachable from outside the crate. previously the const lived in a private module and was unreachable. thanks to @wholovesalife for catching this in [#3](https://github.com/f4rkh4d/mlkem-rs/pull/3).
+- regression test in `tests/api.rs` asserts `mlkem::MAX_K == 4` and that it stays `>=` every parameter set's `K`.
+
 ## [0.8.10]
 
 ### fixed
