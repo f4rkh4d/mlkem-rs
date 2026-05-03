@@ -1,6 +1,6 @@
 # mlkem
 
-post-quantum kem (ml-kem, formerly kyber) in pure rust. all three security levels. byte-for-byte cross-checked against the audited rustcrypto reference on 3000 random seeds. ~700 lines of code, sha3 is the only crypto dependency.
+post-quantum kem (ml-kem, formerly kyber) in pure rust. all three security levels. passes all 180 official nist acvp test vectors and is byte-for-byte cross-checked against the audited rustcrypto reference on 3000 random seeds. ~700 lines of code, sha3 is the only crypto dependency.
 
 [![crates.io](https://img.shields.io/crates/v/mlkem-rs.svg)](https://crates.io/crates/mlkem-rs)
 [![docs.rs](https://img.shields.io/docsrs/mlkem-rs)](https://docs.rs/mlkem-rs)
@@ -50,6 +50,7 @@ assert_eq!(alice_ss, bob_ss);
 
 ## correctness
 
+- **nist acvp vectors.** `tests/nist_kats.rs` runs all 180 official ml-kem test cases from the [nist algorithm validation program](https://github.com/usnistgov/ACVP-Server) (75 keygen + 75 encapsulation + 30 decapsulation), spread evenly across the three parameter sets. every byte of every output matches.
 - **cross-check.** `tests/cross_check.rs` runs 1000 deterministic seeds **per parameter set** through both this crate and the audited [rustcrypto `ml-kem`](https://crates.io/crates/ml-kem). it asserts byte-equality on pk, sk, ciphertext, and the recovered shared secret. 3000 round-trips total. if anything drifts, the test breaks.
 - **api tests.** `tests/api.rs` covers handshake, determinism, sizes, implicit-reject on tampered ciphertext, and serialization roundtrip. macro-instantiated for all three levels.
 - **constant time.** shared-secret equality, the fo-transform ciphertext check, and key comparisons use [`subtle`](https://crates.io/crates/subtle). secret keys and shared secrets are `ZeroizeOnDrop`. compiler-level constant-time guarantees beyond that have not been measured. see "things flagged" below.

@@ -3,6 +3,16 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.3.0]
+
+### added
+- `tests/nist_kats.rs` runs all 180 official nist acvp test vectors for ml-kem (75 keygen, 75 encapsulation, 30 decapsulation, all three parameter sets). every byte matches.
+- vectors live in `tests/nist-kats/key-gen.json` and `tests/nist-kats/encap-decap.json`, sourced from the [acvp server reference dump](https://github.com/usnistgov/ACVP-Server) via the rustcrypto mirror.
+- new dev-dep `serde_json` to parse the acvp test files.
+
+### notes
+- this is a *correctness* release. the implementation did not move; we just got hit with the official ground truth and it held up. the 3000-seed cross-check from 0.2.0 turned out to be a pretty accurate predictor.
+
 ## [0.2.0]
 
 ### added
