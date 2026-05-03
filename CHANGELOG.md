@@ -3,6 +3,11 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.8.2]
+
+### added
+- `examples/handshake.rs`: minimal alice/bob handshake using `MlKem768`. run with `cargo run --release --example handshake`.
+
 ## [0.8.1]
 
 ### fixed
