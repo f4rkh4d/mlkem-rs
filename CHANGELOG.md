@@ -3,6 +3,11 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.8.10]
+
+### fixed
+- removed `#![cfg_attr(docsrs, feature(doc_auto_cfg))]`. the `doc_auto_cfg` rustdoc feature was stabilized and the unstable opt-in was removed in rust 1.92, so the attribute caused docs.rs builds (which run on a recent nightly) to fail with `feature has been removed`. docs.rs is configured via `[package.metadata.docs.rs] rustdoc-args = ["--cfg", "docsrs"]` and that path now activates the stabilized auto-cfg behaviour without an attribute on our side.
+
 ## [0.8.9]
 
 ### changed

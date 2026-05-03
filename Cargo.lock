@@ -353,7 +353,7 @@ dependencies = [
 
 [[package]]
 name = "mlkem-rs"
-version = "0.8.9"
+version = "0.8.10"
 dependencies = [
  "bincode",
  "criterion",
