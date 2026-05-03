@@ -3,6 +3,12 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.8.3]
+
+### added
+- `LengthError` public error type with `expected` and `got` fields. implements `Display` and `std::error::Error` (under the `std` feature).
+- `TryFrom<&[u8]>` for `PublicKey*`, `SecretKey*`, `Ciphertext*` on all three levels. lets users validate length at the boundary instead of going through the panicking `from_bytes(&[u8; N])` path.
+
 ## [0.8.2]
 
 ### added

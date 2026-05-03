@@ -24,6 +24,27 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 pub use params::{Params, Params1024, Params512, Params768};
 
+/// returned when a slice handed to a `TryFrom` impl on a key, ciphertext, or
+/// shared secret newtype has the wrong length.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct LengthError {
+    pub expected: usize,
+    pub got: usize,
+}
+
+impl core::fmt::Display for LengthError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "wrong byte length: expected {}, got {}",
+            self.expected, self.got
+        )
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for LengthError {}
+
 /// generic interface implemented by `MlKem512`, `MlKem768` and `MlKem1024`.
 /// lets you write code that picks a parameter set at instantiation time.
 ///
@@ -271,6 +292,49 @@ macro_rules! mlkem_api {
         impl Zeroize for $ssty {
             fn zeroize(&mut self) {
                 self.0.zeroize();
+            }
+        }
+
+        impl TryFrom<&[u8]> for $pkty {
+            type Error = LengthError;
+            fn try_from(b: &[u8]) -> Result<Self, LengthError> {
+                if b.len() != $pk {
+                    return Err(LengthError {
+                        expected: $pk,
+                        got: b.len(),
+                    });
+                }
+                let mut a = [0u8; $pk];
+                a.copy_from_slice(b);
+                Ok(Self(a))
+            }
+        }
+        impl TryFrom<&[u8]> for $skty {
+            type Error = LengthError;
+            fn try_from(b: &[u8]) -> Result<Self, LengthError> {
+                if b.len() != $sk {
+                    return Err(LengthError {
+                        expected: $sk,
+                        got: b.len(),
+                    });
+                }
+                let mut a = [0u8; $sk];
+                a.copy_from_slice(b);
+                Ok(Self(a))
+            }
+        }
+        impl TryFrom<&[u8]> for $ctty {
+            type Error = LengthError;
+            fn try_from(b: &[u8]) -> Result<Self, LengthError> {
+                if b.len() != $ct {
+                    return Err(LengthError {
+                        expected: $ct,
+                        got: b.len(),
+                    });
+                }
+                let mut a = [0u8; $ct];
+                a.copy_from_slice(b);
+                Ok(Self(a))
             }
         }
 
