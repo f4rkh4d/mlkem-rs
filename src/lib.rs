@@ -51,9 +51,26 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
-#![warn(clippy::all)]
+#![warn(clippy::all, clippy::pedantic)]
 #![warn(missing_debug_implementations)]
+// pedantic categories that fire repeatedly inside the algebraic / ntt code
+// where the cast / shadowing patterns are intentional. these are reviewed
+// case-by-case rather than chased project-wide.
 #![allow(clippy::needless_range_loop)]
+#![allow(clippy::cast_lossless)]
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::cast_sign_loss)]
+#![allow(clippy::cast_possible_wrap)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::similar_names)]
+#![allow(clippy::many_single_char_names)]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::missing_panics_doc)]
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::must_use_candidate)]
+#![allow(clippy::doc_markdown)]
+#![allow(clippy::inline_always)]
+#![allow(clippy::items_after_statements)]
 
 extern crate alloc;
 

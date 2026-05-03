@@ -3,6 +3,14 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.8.8]
+
+### added
+- crate now warns on `clippy::pedantic` in addition to `clippy::all`. categories that fire repeatedly inside the algebraic / ntt code (intentional integer casts, dense single-letter names from the spec, repeated module names, etc.) are explicitly allowed at the crate root with rationale comments.
+
+### fixed
+- `cargo clippy --release --all-targets -- -D warnings` is now clean under pedantic. ci enforces this on every push.
+
 ## [0.8.7]
 
 ### added
