@@ -109,6 +109,15 @@ cargo run --release --example serde_save_restore --features serde
 - examples: [`handshake`](examples/handshake.rs), [`serde_save_restore`](examples/serde_save_restore.rs)
 - changelog: [CHANGELOG.md](CHANGELOG.md)
 
+## related crates
+
+other small rust pieces shipped alongside this one:
+
+- [`mlkem-tls`](https://github.com/f4rkh4d/mlkem-tls) X25519MLKEM768/1024 hybrid kem per draft-ietf-tls-ecdhe-mlkem (uses this crate as the post-quantum half)
+- [`bashward`](https://github.com/f4rkh4d/bashward) checkpoint and rewind for bash side-effects in claude code
+- [`skill-scan`](https://github.com/f4rkh4d/skill-scan) local prompt-injection scanner for claude skills, MCP, AGENTS.md
+- [`pluvgo`](https://github.com/f4rkh4d/pluvgo) fast neovim plugin manager, single rust binary, no neovim required to install
+
 ## license
 
 dual-licensed under MIT or Apache-2.0, at your option.
