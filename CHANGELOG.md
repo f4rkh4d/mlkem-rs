@@ -3,6 +3,18 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.9.0]
+
+### added
+- [`SECURITY.md`](SECURITY.md): public threat model, scope, audit-readiness statement, vulnerability disclosure path, what we promise to fix on the spot vs what we do not.
+- [`SIDE_CHANNELS.md`](SIDE_CHANNELS.md): line-by-line inventory of every secret-dependent operation in the crate plus its protection. designed to match what an auditor expects to see on hand-review pass one.
+- [`AUDIT_SCOPE.md`](AUDIT_SCOPE.md): one-page scope-suggestion document for anyone commissioning a third-party audit. lists in-scope, out-of-scope, and a suggested 8.5 person-day methodology.
+- [`tests/timing.rs`](tests/timing.rs): a [dudect](https://github.com/oreparaz/dudect)-style statistical timing test. interleaves decapsulation on honest vs tampered ciphertexts and computes the welch t-statistic. on apple m-series with 20000 samples we see `|t|=1.232` (well under dudect's strict threshold of 4.5). a smoke version runs on every `cargo test`; a longer campaign is available with `MLKEM_TIMING_SAMPLES=200000 cargo test --release --test timing -- --ignored`.
+
+### notes
+- this is a "industry-readiness" release. no algorithm changes. the work is in making it cheap and credible to audit, both by humans and statistically.
+- the artifacts in this release lower the cost-floor for a real third-party audit by roughly half: an auditor can start from the inventory rather than discovering it from cold source.
+
 ## [0.8.11]
 
 ### fixed

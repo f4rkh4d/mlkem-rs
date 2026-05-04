@@ -9,10 +9,12 @@ fn max_k_re_export_matches_params() {
     // on parameter rank." until this fix the const lived at poly::MAX_K
     // and was unreachable from outside the crate. assert the public path
     // exists and the value matches the largest Params::K.
-    assert_eq!(mlkem::MAX_K, 4);
-    assert!(mlkem::MAX_K >= <mlkem::Params512 as mlkem::Params>::K);
-    assert!(mlkem::MAX_K >= <mlkem::Params768 as mlkem::Params>::K);
-    assert!(mlkem::MAX_K >= <mlkem::Params1024 as mlkem::Params>::K);
+    const _: () = {
+        assert!(mlkem::MAX_K == 4);
+        assert!(mlkem::MAX_K >= <mlkem::Params512 as mlkem::Params>::K);
+        assert!(mlkem::MAX_K >= <mlkem::Params768 as mlkem::Params>::K);
+        assert!(mlkem::MAX_K >= <mlkem::Params1024 as mlkem::Params>::K);
+    };
 }
 
 macro_rules! api_tests {

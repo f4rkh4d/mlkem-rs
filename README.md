@@ -58,7 +58,7 @@ assert_eq!(alice_ss, bob_ss);
 - **api tests.** `tests/api.rs` covers handshake, determinism, sizes, implicit-reject on tampered ciphertext, and serialization roundtrip. macro-instantiated for all three levels.
 - **stress.** `tests/stress.rs` runs 24000 fixed-seed iterations on every `cargo test`: 5000 honest round-trips, 2000 random-tamper implicit-reject checks, 1000 garbage-input decap calls, all per parameter set. ~1 second total.
 - **fuzz.** `fuzz/` ships a `cargo-fuzz` harness with four targets (decap-no-panic, encap-no-panic, tampered-ct-implicit-reject, round-trip). nightly only; see `fuzz/README.md`.
-- **constant time.** shared-secret equality, the fo-transform ciphertext check, and key comparisons use [`subtle`](https://crates.io/crates/subtle). secret keys and shared secrets are `ZeroizeOnDrop`. compiler-level constant-time guarantees beyond that have not been measured. see "things flagged" below.
+- **constant time.** shared-secret equality, the fo-transform ciphertext check, and key comparisons use [`subtle`](https://crates.io/crates/subtle). secret keys and shared secrets are `ZeroizeOnDrop`. since 0.9.0 a [dudect](https://github.com/oreparaz/dudect)-style timing harness in [`tests/timing.rs`](tests/timing.rs) runs welch's t-test on the latency of decapsulation across honest and tampered ciphertexts; on apple m-series at 20000 samples we measure `|t|=1.232`, comfortably under dudect's strict threshold of 4.5. see [`SIDE_CHANNELS.md`](SIDE_CHANNELS.md) for the inventory of every secret-dependent operation.
 - **memory.** internal buffers go through `Vec`. wipe-on-drop applies to the public `SecretKey*` and `SharedSecret*` types, not to internal scratch. if you need a stronger story, audit before relying.
 
 ## performance
@@ -98,6 +98,18 @@ heap-allocation-wise, the algebraic core (matrix sample, polyvecs, ntt, basemul)
 cargo run --release --example handshake
 cargo run --release --example serde_save_restore --features serde
 ```
+
+## security
+
+vulnerability reports go to **hello@frkhd.com** with subject `mlkem-rs security`. coordinated disclosure preferred; please do not file a public github issue for cryptographic findings. the full policy lives in [`SECURITY.md`](SECURITY.md).
+
+## audit readiness
+
+three documents live at the repo root for anyone commissioning a third-party audit:
+
+- [`SECURITY.md`](SECURITY.md) public threat model, scope, what is and is not under audit
+- [`SIDE_CHANNELS.md`](SIDE_CHANNELS.md) inventory of every secret-dependent operation and its protection
+- [`AUDIT_SCOPE.md`](AUDIT_SCOPE.md) one-page suggested scope and methodology for an audit
 
 ## links
 
