@@ -1,6 +1,6 @@
 [package]
 name = "mlkem-rs"
-version = "0.11.0"
+version = "0.12.0"
 edition = "2021"
 rust-version = "1.70"
 description = "ml-kem (kyber) post-quantum key encapsulation, from scratch in pure rust, all three security levels, nist-kat verified"

@@ -8,13 +8,14 @@ ones.
 
 ## what is proven
 
-### `src/field.rs` (3 harnesses)
+### `src/field.rs` (4 harnesses)
 
 | harness                                | claim                                                                |
 |----------------------------------------|----------------------------------------------------------------------|
 | `barrett_reduce_matches_naive_nonneg`  | for every `a` in `[0, Q*Q)`, `barrett_reduce(a) == a % Q < Q`        |
 | `fqadd_in_range`                       | for every `a, b` in `[0, Q)`, `fqadd(a, b) == (a + b) mod Q < Q`     |
 | `fqsub_in_range`                       | for every `a, b` in `[0, Q)`, `fqsub(a, b) == (a - b).rem_euclid(Q)` |
+| `montgomery_reduce_in_range`           | for every `a` in `[0, Q*Q)`, `montgomery_reduce(a)` is in `[0, Q)`   |
 
 `fqmul` is intentionally not given a kani harness. its correctness
 follows compositionally: for `a, b` in `[0, Q)`, the `i32` product

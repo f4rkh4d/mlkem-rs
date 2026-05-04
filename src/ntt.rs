@@ -7,8 +7,8 @@
 // gammas[k] = zeta^{2*brev7(k)+1} mod q, used in basecase multiply.
 // constants cross-checked against the kyber reference.
 
-use crate::field::{barrett_reduce, fqadd, fqmul, fqsub, Fe};
-use crate::params::N;
+use crate::field::{barrett_reduce, fqadd, fqmul, fqsub, montgomery_reduce, Fe, MONT_R};
+use crate::params::{N, Q};
 
 pub const ZETAS: [Fe; 128] = [
     1, 1729, 2580, 3289, 2642, 630, 1897, 848, 1062, 1919, 193, 797, 2786, 3260, 569, 1746, 296,
@@ -20,6 +20,24 @@ pub const ZETAS: [Fe; 128] = [
     3220, 375, 2549, 2090, 1645, 1063, 319, 2773, 757, 2099, 561, 2466, 2594, 2804, 1092, 403,
     1026, 1143, 2150, 2775, 886, 1722, 1212, 1874, 1029, 2110, 2935, 885, 2154,
 ];
+
+/// zetas pre-multiplied by `R = 2^16` mod q (Montgomery form). every
+/// inner butterfly of forward / inverse ntt now uses Montgomery
+/// reduction with these instead of a barrett reduce per multiply.
+pub const ZETAS_MONT: [Fe; 128] = {
+    let mut z = [0u16; 128];
+    let mut i = 0;
+    while i < 128 {
+        z[i] = ((ZETAS[i] as u32 * MONT_R as u32) % Q as u32) as u16;
+        i += 1;
+    }
+    z
+};
+
+/// `(128^(-1) mod q) * R mod q` = `3303 * 2285 mod 3329` = 512.
+/// applied as the final multiply at the end of `ntt_inverse`. with this
+/// in Montgomery form, the post-inv-ntt loop uses Montgomery reduce too.
+pub const F_MONT: Fe = 512;
 
 // gammas[i] = zeta^{2*brev7(i)+1} mod q. 128 entries. computed at const-eval.
 pub const GAMMAS: [Fe; 128] = {
@@ -33,16 +51,32 @@ pub const GAMMAS: [Fe; 128] = {
     g
 };
 
-// forward ntt, cooley-tukey, in place.
+/// gammas pre-multiplied by `R = 2^16` mod q (Montgomery form). used in
+/// `basemul` for the gamma multiplication path; saves one barrett per
+/// coefficient pair.
+pub const GAMMAS_MONT: [Fe; 128] = {
+    let mut g = [0u16; 128];
+    let mut i = 0;
+    while i < 128 {
+        g[i] = ((GAMMAS[i] as u32 * MONT_R as u32) % Q as u32) as u16;
+        i += 1;
+    }
+    g
+};
+
+// forward ntt, cooley-tukey, in place. zeta multiplications use
+// Montgomery reduction with `ZETAS_MONT` (zeta * R mod q) as the
+// second operand, so the result lands in standard form without a
+// full barrett reduce.
 pub fn ntt_forward(a: &mut [Fe; N]) {
     let mut k: usize = 1;
     for &len in &[128usize, 64, 32, 16, 8, 4, 2] {
         let mut start = 0;
         while start < 256 {
-            let zeta = ZETAS[k];
+            let zeta_mont = ZETAS_MONT[k];
             k += 1;
             for j in start..(start + len) {
-                let t = fqmul(zeta, a[j + len]);
+                let t = montgomery_reduce(a[j + len] as i32 * zeta_mont as i32);
                 a[j + len] = fqsub(a[j], t);
                 a[j] = fqadd(a[j], t);
             }
@@ -51,35 +85,42 @@ pub fn ntt_forward(a: &mut [Fe; N]) {
     }
 }
 
-// inverse ntt, gentleman-sande. final scale by n^-1 = 128^-1 = 3303 mod q.
-// uses -zeta (q - zeta) since inverse of X ↦ X*zeta has inverse root.
+// inverse ntt, gentleman-sande. final scale by n^(-1) = 128^(-1) = 3303 mod q,
+// applied via Montgomery using `F_MONT = 3303 * R mod q = 512`.
+// uses -zeta (q - zeta) since inverse of X -> X*zeta has inverse root.
 pub fn ntt_inverse(a: &mut [Fe; N]) {
-    const F: Fe = 3303;
     let mut k: usize = 127;
     for &len in &[2usize, 4, 8, 16, 32, 64, 128] {
         let mut start = 0;
         while start < 256 {
-            let zeta = ZETAS[k];
+            let zeta_mont = ZETAS_MONT[k];
             k = k.wrapping_sub(1);
             for j in start..(start + len) {
                 let tmp = a[j];
                 a[j] = barrett_reduce(tmp as i32 + a[j + len] as i32);
                 a[j + len] = fqsub(a[j + len], tmp);
-                a[j + len] = fqmul(zeta, a[j + len]);
+                a[j + len] = montgomery_reduce(a[j + len] as i32 * zeta_mont as i32);
             }
             start += 2 * len;
         }
     }
     for coef in a.iter_mut() {
-        *coef = fqmul(*coef, F);
+        *coef = montgomery_reduce(*coef as i32 * F_MONT as i32);
     }
 }
 
 // basecase multiply: in the incomplete ntt each coeff pair (a0, a1)
 // represents a0 + a1 X mod (X^2 - gamma). multiply two such pairs.
+//
+// the gamma multiply uses Montgomery via `gamma_mont` (gamma * R mod q),
+// saving one barrett per coefficient pair. the four `a*b` multiplies in
+// the body stay barrett-based because both operands are unconstrained
+// polynomial coefficients.
 #[inline]
-pub fn basemul(a0: Fe, a1: Fe, b0: Fe, b1: Fe, gamma: Fe) -> (Fe, Fe) {
-    let c0 = fqmul(fqmul(a1, b1), gamma) as i32 + fqmul(a0, b0) as i32;
+pub fn basemul(a0: Fe, a1: Fe, b0: Fe, b1: Fe, gamma_mont: Fe) -> (Fe, Fe) {
+    let prod_a1b1 = fqmul(a1, b1);
+    let gamma_term = montgomery_reduce(prod_a1b1 as i32 * gamma_mont as i32);
+    let c0 = gamma_term as i32 + fqmul(a0, b0) as i32;
     let c0 = barrett_reduce(c0);
     let c1 = fqmul(a0, b1) as i32 + fqmul(a1, b0) as i32;
     let c1 = barrett_reduce(c1);

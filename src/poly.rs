@@ -5,7 +5,7 @@
 // without any heap allocation in the algebraic hot path.
 
 use crate::field::{fqadd, fqsub, Fe};
-use crate::ntt::{basemul, ntt_forward, ntt_inverse, GAMMAS};
+use crate::ntt::{basemul, ntt_forward, ntt_inverse, GAMMAS_MONT};
 use crate::params::N;
 
 /// upper bound on the rank used by any ml-kem parameter set.
@@ -77,7 +77,7 @@ impl PolyNtt {
                 self.0[2 * i + 1],
                 other.0[2 * i],
                 other.0[2 * i + 1],
-                GAMMAS[i],
+                GAMMAS_MONT[i],
             );
             r[2 * i] = c0;
             r[2 * i + 1] = c1;

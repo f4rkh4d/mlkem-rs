@@ -3,6 +3,28 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.12.0]
+
+### added
+- `field::montgomery_reduce(a: i32) -> u16`. canonical Montgomery reduction of `a` with `R = 2^16`. constants documented (`MONT_R = 2285 = 2^16 mod q`, `QINV = 62209 = q^(-1) mod 2^16`).
+- `ntt::ZETAS_MONT`: zetas pre-multiplied by `R mod q`. computed in const-eval at compile time. used by `ntt_forward` and `ntt_inverse` instead of barrett-reducing every multiply.
+- `ntt::GAMMAS_MONT`: gammas pre-multiplied by `R mod q`. used by `basemul` for the gamma multiplication path, saving one barrett per coefficient pair.
+- `ntt::F_MONT = 512`: the `128^(-1) mod q` final scaling factor in Montgomery form (`= 3303 * 2285 mod 3329`). applied via `montgomery_reduce` at the end of `ntt_inverse`.
+- 1 new kani harness `montgomery_reduce_in_range` that proves `montgomery_reduce(a)` is in `[0, Q)` for every `a in [0, Q*Q)`.
+
+### changed
+- `ntt_forward`, `ntt_inverse`, and `basemul` now use Montgomery reduction on the zeta/gamma multiplication path. polynomial coefficients still pass through these functions in standard form (`[0, Q)`); the Montgomery form lives only in the precomputed constant tables, so callers see no behavioral change.
+- `basemul`'s signature parameter renamed from `gamma` to `gamma_mont` to make the convention obvious.
+
+### performance
+- on apple m-series the perf is unchanged within noise (Barrett was already heavily inlined and the wide pipeline masks the micro-arithmetic difference). the Montgomery path is the canonical pattern used by libcrux, rustcrypto, and the kyber reference; this release makes the codebase ready for a future SIMD pass that does benefit from Montgomery's structure.
+
+### correctness
+- 180/180 NIST ACVP test vectors green.
+- 3000-seed cross-check vs the audited rustcrypto `ml-kem` byte-for-byte green.
+- 24000 stress iterations green.
+- all 11 (10 + 1) kani harnesses verified successful.
+
 ## [0.11.0]
 
 ### added
