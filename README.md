@@ -105,11 +105,14 @@ vulnerability reports go to **hello@frkhd.com** with subject `mlkem-rs security`
 
 ## audit readiness
 
-three documents live at the repo root for anyone commissioning a third-party audit:
+four documents live at the repo root for anyone commissioning a third-party audit:
 
 - [`SECURITY.md`](SECURITY.md) public threat model, scope, what is and is not under audit
 - [`SIDE_CHANNELS.md`](SIDE_CHANNELS.md) inventory of every secret-dependent operation and its protection
 - [`AUDIT_SCOPE.md`](AUDIT_SCOPE.md) one-page suggested scope and methodology for an audit
+- [`FORMAL_VERIFICATION.md`](FORMAL_VERIFICATION.md) every kani-checked proof in the crate
+
+10 [`kani`](https://model-checking.github.io/kani/) harnesses ship in 0.10.0 covering the field arithmetic and bit-pack widths. they prove `barrett_reduce`, `fqadd`, `fqsub`, `compress_d` and `decompress_d` for every legal input. all ten complete in under 60 seconds total on apple m. run with `cargo install --locked kani-verifier && cargo kani setup && cargo kani`.
 
 ## links
 

@@ -1,6 +1,6 @@
 [package]
 name = "mlkem-rs"
-version = "0.9.0"
+version = "0.10.0"
 edition = "2021"
 rust-version = "1.70"
 description = "ml-kem (kyber) post-quantum key encapsulation, from scratch in pure rust, all three security levels, nist-kat verified"
@@ -13,6 +13,9 @@ categories = ["cryptography", "no-std"]
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)', 'cfg(docsrs)'] }
 
 [lib]
 name = "mlkem"

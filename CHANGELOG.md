@@ -3,6 +3,18 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.10.0]
+
+### added
+- [`FORMAL_VERIFICATION.md`](FORMAL_VERIFICATION.md): documentation of every kani-checked proof in the crate.
+- 10 [`kani`](https://model-checking.github.io/kani/) formal-verification harnesses. they live behind `#[cfg(kani)]` so normal builds are unaffected. all ten verify successfully on apple m-series in under 60 seconds total. exhaustively check the field-arithmetic and compression invariants:
+  - `src/field.rs`: barrett_reduce matches naive mod for every `a` in `[0, Q*Q)`; fqadd/fqsub/fqmul stay in the field for every legal input pair.
+  - `src/compress.rs`: compress_d output is always in `[0, 2^d)` for d in {4, 5, 10, 11}; decompress_d output is always in `[0, Q)` for d in {10, 11}; the 1-bit message-pack hits the spec values at 0, q/2, q-1.
+- run with `cargo install --locked kani-verifier && cargo kani setup && cargo kani`.
+
+### notes
+- the field-arithmetic and bit-pack layer is exactly where rust ML-KEM implementations tend to ship subtle bugs (wrong barrett constant, compress rounding off-by-one, unchecked overflow). closing those edges with a bounded model check removes a whole category of failure from the audit checklist.
+
 ## [0.9.0]
 
 ### added

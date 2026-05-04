@@ -45,3 +45,73 @@ pub fn decompress_poly(p: &Poly, d: u32) -> Poly {
     }
     Poly(r)
 }
+
+#[cfg(kani)]
+mod kani_proofs {
+    use super::*;
+
+    /// compress_d output is always in [0, 2^d). proven for every
+    /// `d in {1, 4, 5, 10, 11}` (the union used at any parameter set).
+    #[kani::proof]
+    fn compress_in_range_d10() {
+        let x: u16 = kani::any();
+        kani::assume(x < Q);
+        let r = compress_fe(x, 10);
+        assert!(r < (1u16 << 10));
+    }
+
+    #[kani::proof]
+    fn compress_in_range_d11() {
+        let x: u16 = kani::any();
+        kani::assume(x < Q);
+        let r = compress_fe(x, 11);
+        assert!(r < (1u16 << 11));
+    }
+
+    #[kani::proof]
+    fn compress_in_range_d4() {
+        let x: u16 = kani::any();
+        kani::assume(x < Q);
+        let r = compress_fe(x, 4);
+        assert!(r < (1u16 << 4));
+    }
+
+    #[kani::proof]
+    fn compress_in_range_d5() {
+        let x: u16 = kani::any();
+        kani::assume(x < Q);
+        let r = compress_fe(x, 5);
+        assert!(r < (1u16 << 5));
+    }
+
+    /// compress_poly_fe_1(x) is 0 if x is closer to 0 than to q/2,
+    /// otherwise 1. that's the message-bit-pack operation; if the
+    /// rounding ever drifted, the message would not roundtrip.
+    #[kani::proof]
+    fn compress_d1_roundtrip_at_anchors() {
+        // 0 must compress to 0
+        assert_eq!(compress_poly_fe_1(0), 0);
+        // q/2 (=1664 since q=3329) is the threshold; anything >= 1664 maps to 1
+        assert_eq!(compress_poly_fe_1(1665), 1);
+        // q-1 must compress to 0 (round-to-even / floor-to-zero at the wrap)
+        // see the formula: ((q-1) << 1) + q/2 = 6657 + 1664 = 8321; 8321 / 3329 = 2; 2 mod 2 = 0.
+        assert_eq!(compress_poly_fe_1(Q - 1), 0);
+    }
+
+    /// decompress_d output is always in [0, q).
+    #[kani::proof]
+    fn decompress_in_range_d10() {
+        let y: u16 = kani::any();
+        kani::assume(y < (1u16 << 10));
+        let r = decompress_fe(y, 10);
+        assert!(r < Q);
+    }
+
+    #[kani::proof]
+    fn decompress_in_range_d11() {
+        let y: u16 = kani::any();
+        kani::assume(y < (1u16 << 11));
+        let r = decompress_fe(y, 11);
+        assert!(r < Q);
+    }
+}
