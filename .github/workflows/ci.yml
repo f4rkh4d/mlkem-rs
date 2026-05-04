@@ -29,6 +29,20 @@ jobs:
       - name: test (serde feature)
         run: cargo test --release --features serde
 
+  supply-chain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: install cargo-audit
+        run: cargo install --locked cargo-audit
+      - name: install cargo-deny
+        run: cargo install --locked cargo-deny
+      - name: cargo audit (advisory db)
+        run: cargo audit
+      - name: cargo deny (license + bans + sources)
+        run: cargo deny check
+
   no-std:
     runs-on: ubuntu-latest
     steps:

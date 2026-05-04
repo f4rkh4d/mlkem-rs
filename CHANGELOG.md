@@ -3,6 +3,17 @@
 format follows [keep-a-changelog](https://keepachangelog.com).
 this project uses [semver](https://semver.org/).
 
+## [0.11.0]
+
+### added
+- [`SUPPLY_CHAIN.md`](SUPPLY_CHAIN.md): every runtime dependency, what it provides, who maintains it, audit history. license discipline. reproducible-install recipe. what we will not do.
+- [`rust-toolchain.toml`](rust-toolchain.toml): pins the stable toolchain plus rustfmt + clippy components, so `cargo install --locked --offline` produces a bit-identical build.
+- ci now runs `cargo audit` against the [RustSec advisory database](https://github.com/RustSec/advisory-db) and `cargo deny check` against [`deny.toml`](deny.toml) on every push. broken upstream crates fail CI immediately.
+
+### notes
+- this is a supply-chain hardening release. no algorithm changes. closes the gap between "individual rust crate" and "industry-grade crypto library you can drop into a regulated stack".
+- the 0.7.x cargo-deny rules already shipped; this release wires them into CI so they are actually enforced rather than aspirational.
+
 ## [0.10.0]
 
 ### added
