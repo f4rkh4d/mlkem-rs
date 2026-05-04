@@ -70,6 +70,34 @@ macro_rules! api_tests {
             }
 
             #[test]
+            fn try_from_wrong_length_reports_sizes() {
+                // 0.8.3 added TryFrom<&[u8]> + LengthError but never wrote a
+                // test for them. assert the error path actually reports the
+                // expected vs got sizes and the happy path roundtrips.
+                let err = <$pk>::try_from(&[0u8; 7][..]).unwrap_err();
+                assert_eq!(err.expected, $pk_size);
+                assert_eq!(err.got, 7);
+
+                assert!(<$ct>::try_from(&[0u8; 0][..]).is_err());
+                assert!(<$sk>::try_from(&[0u8; $sk_size + 1][..]).is_err());
+
+                // happy path round-trip via slice -> newtype
+                let buf = vec![0u8; $pk_size];
+                let pk_zeros = <$pk>::try_from(buf.as_slice()).unwrap();
+                assert_eq!(pk_zeros.as_bytes()[0], 0);
+            }
+
+            #[test]
+            fn try_from_round_trip_via_slice() {
+                let mut rng = thread_rng();
+                let (pk, sk) = $kem::keygen(&mut rng);
+                let pk2 = <$pk>::try_from(pk.as_bytes().as_slice()).unwrap();
+                let sk2 = <$sk>::try_from(sk.as_bytes().as_slice()).unwrap();
+                assert_eq!(pk, pk2);
+                assert_eq!(sk, sk2);
+            }
+
+            #[test]
             fn serialization_roundtrip() {
                 let mut rng = thread_rng();
                 let (pk, sk) = $kem::keygen(&mut rng);
